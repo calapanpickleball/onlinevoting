@@ -1,0 +1,47 @@
+<!doctype html><html lang="tl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin - CCPC Wrong Outfit</title>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@400;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css">
+<style>main{max-width:1100px;margin:auto;padding:1em}.g{display:grid;gap:1em;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}.card{margin-bottom:1em}.row{display:flex;gap:.5em;flex-wrap:wrap;align-items:center;margin:.5em 0}.row input[type=number]{width:5em}
+table{width:100%;border-collapse:collapse}td,th{padding:.4em;border-bottom:2px solid #ddd;text-align:left;font-size:.9rem}.st{font-family:Bungee;font-size:1.4rem;color:var(--pink)}label.ck{display:flex;gap:.4em;align-items:center;font-weight:700}label.ck input{width:auto}</style></head><body>
+<main id="gate"><div class="card" style="max-width:360px;margin:20vh auto"><h2>Admin 🔐</h2><input id="pin" type="password" inputmode="numeric" placeholder="PIN"><br><br><button id="go" style="width:100%">Pasok</button></div></main>
+<main id="app" class="hide"><h1>CCPC Wrong Outfit, Wrong Paddle - Admin</h1>
+<div class="g"><div class="card"><h2>Event control</h2><p>Phase: <span class="st" id="ph">-</span></p><p>Registered: <b id="nr">0</b> | Nakaboto: <b id="nv">0</b> (<b id="np">0</b>%)</p>
+<div class="row"><b>1.</b><input type="number" id="rm" value="5" min="1"> min <button id="sr">Start registration</button></div>
+<div class="row"><b>2.</b><input type="number" id="vm" value="5" min="1"> min <button id="sv" class="alt">Sarado na ang registration, ACTIVATE VOTING</button></div>
+<div class="row"><b>3.</b><button id="cv" class="dim">Close voting at ipakita ang results</button></div>
+<p><b>TV display:</b></p><div class="row" id="tabs"></div><div class="row"><button class="dim" id="rs">Reset event (burahin ang voters at votes)</button></div></div>
+<div class="card"><h2>Results reveal (TV Tab 4)</h2><div class="row" id="rv"></div><hr><h2>Settings</h2><label>Voting page URL (para sa QR)</label><input id="vu"><br><br><label>WiFi QR image (maliit na image file)</label><input type="file" id="wf" accept="image/*"><div class="row"><button id="ss">I-save ang settings</button></div></div></div>
+<div class="card"><h2>Mga kalahok</h2><div class="row"><input id="nm" placeholder="Pangalan" style="flex:1 1 160px"><input id="ot" placeholder="Outfit" style="flex:1 1 160px"><input id="pd" placeholder="Paddle" style="flex:1 1 160px">
+<label class="ck"><input type="checkbox" id="cw" checked>Wrong Outfit</label><label class="ck"><input type="checkbox" id="cp" checked>Wrong Paddle</label><button id="sp">Add</button><button id="cx" class="dim hide">Cancel</button></div>
+<table><thead><tr><th>#<th>Name<th>Outfit<th>Paddle<th></thead><tbody id="pl"></tbody></table></div>
+<div class="card"><h2>Voters (pribado, review lang)</h2><table><thead><tr><th>Nickname<th>Pangalan</thead><tbody id="vl"></tbody></table></div></main>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="common.js"></script>
+<script>
+const PIN='100326';let S={},P={},N={},V={},W={},ed=null,wifi=null;
+const up=o=>db.ref('state').update(o).catch(e=>alert('Hindi na-save: '+e.message));
+$('#pin').onkeydown=e=>{if(e.key==='Enter')$('#go').click()};
+$('#go').onclick=async()=>{if($('#pin').value!==PIN)return alert('Mali ang PIN');const u=await ready;try{await db.ref('admins/'+u.uid).set(PIN)}catch(e){}
+$('#gate').classList.add('hide');$('#app').classList.remove('hide');
+[['state',x=>S=x||{}],['participants',x=>P=x||{}],['nicknames',x=>N=x||{}],['votes',x=>V=x||{}],['voterNames',x=>W=x||{}]].forEach(([p,f])=>listen(p,x=>{f(x);draw()}));};
+$('#tabs').innerHTML=['Participants','Voters','Voting','Results'].map((t,i)=>`<button class="dim" data-t="${i+1}">${i+1}. ${t}</button>`).join('');
+$$('#tabs button').forEach(b=>b.onclick=()=>up({tab:+b.dataset.t}));
+$('#rv').innerHTML=CATS.map(c=>`<button class="dim" data-k="${c.k}">${c.e} ${c.t}</button>`).join('');
+$$('#rv button').forEach(b=>b.onclick=()=>db.ref('state/reveal/'+b.dataset.k).set(((S.reveal||{})[b.dataset.k])?null:true));
+$('#sr').onclick=()=>{const m=+$('#rm').value||5;up({phase:'registration',regMin:m,regEnd:now()+m*60000,tab:2})};
+$('#sv').onclick=()=>{const m=+$('#vm').value||5;if(confirm('Isara ang registration at buksan ang botohan?'))up({phase:'voting',voteMin:m,voteEnd:now()+m*60000,tab:3})};
+$('#cv').onclick=()=>{if(confirm('Isara na ang botohan at ipakita ang results tab?'))up({phase:'closed',tab:4})};
+$('#rs').onclick=()=>{if(confirm('Buburahin ang lahat ng voters at votes. Sigurado ka?'))db.ref().update({nicknames:null,voterNames:null,votes:null,'state/phase':'idle','state/tab':1,'state/reveal':null,'state/regEnd':null,'state/voteEnd':null}).catch(e=>alert(e.message))};
+$('#wf').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>wifi=r.result;r.readAsDataURL(f)};
+$('#ss').onclick=()=>{const s={voteUrl:$('#vu').value.trim(),wifiImg:wifi||(S.settings||{}).wifiImg||''};db.ref('state/settings').set(s).then(()=>alert('Na-save!')).catch(e=>alert(e.message))};
+const nextNum=()=>{let n=1;while(P[n])n++;return n};
+$('#sp').onclick=async()=>{const name=$('#nm').value.trim(),wo=$('#cw').checked,wp=$('#cp').checked;if(!name)return alert('Ilagay ang pangalan');if(!wo&&!wp)return alert('I-check ang Wrong Outfit at/o Wrong Paddle');
+const num=ed||nextNum();await db.ref('participants/'+num).set({num,name,outfit:wo?$('#ot').value.trim():'',paddle:wp?$('#pd').value.trim():'',wo,wp}).catch(e=>alert(e.message));clr()};
+const clr=()=>{ed=null;['#nm','#ot','#pd'].forEach(s=>$(s).value='');$('#cw').checked=$('#cp').checked=true;$('#sp').textContent='Add';$('#cx').classList.add('hide');$('#nm').focus()};$('#cx').onclick=clr;
+function draw(){$('#ph').textContent=(S.phase||'idle').toUpperCase();const n=Object.keys(N).length,v=Object.keys(V).length;$('#nr').textContent=n;$('#nv').textContent=v;$('#np').textContent=n?Math.round(v/n*100):0;
+$$('#tabs button').forEach(b=>b.classList.toggle('on',+b.dataset.t===(S.tab||1)));$$('#rv button').forEach(b=>b.classList.toggle('on',!!(S.reveal||{})[b.dataset.k]));
+if(document.activeElement!==$('#vu'))$('#vu').value=(S.settings||{}).voteUrl||location.href.replace(/admin\.html.*/,'')+'index.html';
+$('#pl').innerHTML=Object.values(P).sort((a,b)=>a.num-b.num).map(p=>`<tr><td><b>${p.num}</b><td>${esc(p.name)}<td>${p.wo?esc(p.outfit):'-'}<td>${p.wp?esc(p.paddle):'-'}<td><button class="dim" data-e="${p.num}">Edit</button> <button class="alt" data-d="${p.num}">Delete</button>`).join('');
+$$('[data-e]').forEach(b=>b.onclick=()=>{const p=P[b.dataset.e];ed=p.num;$('#nm').value=p.name;$('#ot').value=p.outfit;$('#pd').value=p.paddle;$('#cw').checked=!!p.wo;$('#cp').checked=!!p.wp;$('#sp').textContent='Save #'+p.num;$('#cx').classList.remove('hide')});
+$$('[data-d]').forEach(b=>b.onclick=()=>{if(confirm('Burahin si #'+b.dataset.d+'? Magagamit ulit ang number na ito.'))db.ref('participants/'+b.dataset.d).remove()});
+$('#vl').innerHTML=Object.values(W).map(w=>`<tr><td>${esc(w.nickname)}<td>${esc(w.name)}`).join('')}
+</script></body></html>

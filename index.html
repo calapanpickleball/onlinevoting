@@ -1,0 +1,44 @@
+<!doctype html><html lang="tl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Vote! CCPC Wrong Outfit, Wrong Paddle</title>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@400;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css">
+<style>main{max-width:480px;margin:auto;padding:1.2em}header{text-align:center;margin-bottom:1em}h1{font-size:2rem}label{display:block;margin:1em 0 .3em;font-weight:700}
+.nick{font-family:Bungee;font-size:1.8rem;color:var(--pink);text-shadow:2px 2px 0 var(--ink)}.t{font-family:Bungee;font-size:3rem;text-align:center}
+#md{position:fixed;inset:0;background:#1b1147cc;display:flex;align-items:center;justify-content:center;padding:1em}#md .card{max-width:420px;width:100%;max-height:90vh;overflow:auto}#md li{margin:.3em 0}small{display:block;margin:.4em 0}</style></head><body>
+<main><header><span class="sticker">Oct 3, 2026</span><h1>Wrong Outfit,<br>Wrong Paddle</h1></header><div id="v" class="card"></div></main>
+<div id="md" class="hide"><div class="card"><h2>Sure ka na ba?</h2><ul id="sm"></ul><p><b>Isang beses lang puwedeng bumoto. Hindi na ito mababago.</b></p><button class="dim" id="no">Balik, may babaguhin</button> <button class="alt" id="yes">Oo, i-submit na!</button></div></div>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="common.js"></script>
+<script>
+const A=['Little','Mighty','Sneaky','Fearless','Fierce'],C=['Blue','Pink','Red','Green','Purple','Orange','Black'],NN=['Banger','Dinker','Lobber','Smasher','Dropper','Winner'];
+let S={},P={},N={},V={},uid,nick=localStorage.getItem('nick'),sc='';
+const pct=()=>{const n=Object.keys(N).length,v=Object.keys(V).length;return{n,v,p:n?Math.round(v/n*100):0}};
+ready.then(async u=>{uid=u.uid;[S,P,N,V]=(await Promise.all(['state','participants','nicknames','votes'].map(once))).map(x=>x||{});
+listen('state',x=>{S=x||{};route()});listen('nicknames',x=>{N=x||{};route()});listen('votes',x=>{V=x||{};route()});setInterval(tick,250)});
+function route(){const ph=S.phase||'idle',reg=nick&&N[nick]===uid;
+const n=V[uid]?'done':reg?(ph==='voting'?'form':ph==='registration'||ph==='idle'?'wait':'missed'):ph==='registration'?'join':ph==='idle'?'idle':'closed';
+if(n!==sc){sc=n;render()}tick()}
+function render(){const v=$('#v'),x={
+idle:`<h2>Malapit na! 🎉</h2><p>Hindi pa bukas ang registration. Iwan lang na bukas ang page na ito, awtomatiko itong magbabago.</p>`,
+closed:`<h2>Sarado na 🔒</h2><p>Tapos na ang registration kaya hindi ka na makakaboto. Abangan ang results sa TV!</p>`,
+missed:`<h2>Sarado na ang botohan 🔒</h2><p>Hindi ka nakaboto sa oras. Abangan ang results sa TV!</p>`,
+join:`<h2>Sino ka ba talaga? 🕵️</h2><p><b>Anonymous ang botohan.</b> Ang pangalan mo ay para lang ma-count ang bilang ng voters at makabuo ng nickname. Hindi ito ipapakita sa kahit sino.</p><label for=nm>Pangalan mo</label><input id=nm maxlength=40 autocomplete=off placeholder="Hal. Juan"><br><br><button id=jn class=alt style="width:100%">Kunin ang nickname ko</button>`,
+wait:`<p>Ikaw si</p><div class=nick>${esc(nick)}</div><p>Naka-register na! Antayin ang botohan, awtomatiko itong magbubukas.</p><div class=t id=t>0:00</div><p style="text-align:center"><b id=rc>0</b> voters na ang naka-register</p>`,
+done:`<h2>Salamat sa pagboto! 🏆</h2><p>Naitala na ang boto mo, <b>${esc(nick)}</b>. Abangan ang results sa TV!</p><div class=bar><i class=pb></i></div><small class=pt></small>`}[sc];
+v.innerHTML=x||'';if(sc==='join')$('#jn').onclick=join;if(sc==='form')form()}
+async function join(){const name=$('#nm').value.trim();if(!name)return alert('Ilagay muna ang pangalan mo 🙂');
+$('#jn').disabled=true;const all=[];A.forEach(a=>C.forEach(c=>NN.forEach(n=>all.push(a+' '+c+' '+n))));all.sort(()=>Math.random()-.5);
+let got=null;for(const k of all.slice(0,40)){try{await db.ref('nicknames/'+k).set(uid);got=k;break}catch(e){if(S.phase!=='registration')break}}
+if(!got){alert('May problema sa registration. Subukan ulit.');return route()}
+try{await db.ref('voterNames/'+uid).set({name,nickname:got,ts:firebase.database.ServerValue.TIMESTAMP})}catch(e){}
+localStorage.setItem('nick',nick=got);N[got]=uid;sc='';route()}
+function form(){let h=`<h2>Bumoto na! 🗳️</h2><p>Ikaw si <b class=nick style="font-size:1.1rem">${esc(nick)}</b>. Piliin ang bet mo sa bawat award, o piliin ang None.</p>`;
+['outfit','paddle'].forEach(g=>{h+=`<h3>${g==='outfit'?'👗 Wrong Outfit':'🏓 Wrong Paddle'}</h3>`;CATS.filter(c=>c.g===g).forEach(c=>{
+h+=`<label>${c.e} ${c.t}</label><select data-k="${c.k}"><option value="">Pumili…</option><option value="none">None / Walang bet</option>${elig(P,g).map(p=>`<option value="${p.num}">#${p.num} ${esc(p.name)} - ${esc(g==='outfit'?p.outfit:p.paddle)}</option>`).join('')}</select>`})});
+h+=`<br><div class=bar><i class=pb></i></div><small class=pt></small><button id=sb class=alt disabled style="width:100%">I-review at i-submit</button>`;
+$('#v').innerHTML=h;const chk=()=>$('#sb').disabled=$$('select').some(s=>!s.value);$$('select').forEach(s=>s.onchange=chk);
+$('#sb').onclick=()=>{$('#sm').innerHTML=$$('select').map(s=>`<li><b>${CATS.find(c=>c.k===s.dataset.k).t}:</b> ${s.selectedOptions[0].text}</li>`).join('');$('#md').classList.remove('hide')};
+$('#no').onclick=()=>$('#md').classList.add('hide');
+$('#yes').onclick=async()=>{$('#yes').disabled=true;const o={ts:firebase.database.ServerValue.TIMESTAMP};$$('select').forEach(s=>o[s.dataset.k]=s.value);
+try{await db.ref('votes/'+uid).set(o);V[uid]=o;$('#md').classList.add('hide');sc='';route()}catch(e){alert('Hindi na-submit. Baka sarado na ang botohan.');$('#yes').disabled=false;$('#md').classList.add('hide')}}}
+function tick(){if($('#t'))$('#t').textContent=S.phase==='registration'?fmt(S.regEnd-now()):fmt((S.regMin||5)*60000);
+if($('#rc'))$('#rc').textContent=Object.keys(N).length;const q=pct();$$('.pb').forEach(e=>e.style.width=q.p+'%');$$('.pt').forEach(e=>e.textContent=`${q.v} sa ${q.n} registered voters ang nakaboto na (${q.p}%)`)}
+</script></body></html>

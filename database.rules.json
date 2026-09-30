@@ -1,0 +1,9 @@
+{"rules":{
+".read":false,".write":false,
+"admins":{"$uid":{".write":"auth!=null && auth.uid===$uid && !data.exists() && newData.val()==='100326'"}},
+"state":{".read":"auth!=null",".write":"root.child('admins/'+auth.uid).exists()"},
+"participants":{".read":"auth!=null",".write":"root.child('admins/'+auth.uid).exists()"},
+"nicknames":{".read":"auth!=null","$n":{".write":"root.child('admins/'+auth.uid).exists() || (auth!=null && !data.exists() && newData.val()===auth.uid && root.child('state/phase').val()==='registration')"}},
+"voterNames":{".read":"root.child('admins/'+auth.uid).exists()","$uid":{".write":"root.child('admins/'+auth.uid).exists() || (auth.uid===$uid && !data.exists() && root.child('state/phase').val()==='registration')"}},
+"votes":{".read":"auth!=null","$uid":{".write":"root.child('admins/'+auth.uid).exists() || (auth.uid===$uid && !data.exists() && root.child('state/phase').val()==='voting' && root.child('voterNames/'+$uid).exists())"}}
+}}
