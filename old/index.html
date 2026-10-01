@@ -2,19 +2,17 @@
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@400;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css">
 <style>main{max-width:480px;margin:auto;padding:1.2em}header{text-align:center;margin-bottom:1em}h1{font-size:2rem}label{display:block;margin:1em 0 .3em;font-weight:700}
 .nick{font-family:Bungee;font-size:1.8rem;color:var(--pink);text-shadow:2px 2px 0 var(--ink)}.t{font-family:Bungee;font-size:3rem;text-align:center}
-#md{position:fixed;inset:0;background:#1b1147cc;display:flex;align-items:center;justify-content:center;padding:1em}#md .card{max-width:420px;width:100%;max-height:90vh;overflow:auto}#md li{margin:.3em 0}small{display:block;margin:.4em 0}#win{position:fixed;inset:0;z-index:9;background:var(--pink);display:flex;align-items:center;justify-content:center;padding:1em;text-align:center}#win h1{font-size:2.3rem}#win .card{max-width:420px}</style></head><body>
+#md{position:fixed;inset:0;background:#1b1147cc;display:flex;align-items:center;justify-content:center;padding:1em}#md .card{max-width:420px;width:100%;max-height:90vh;overflow:auto}#md li{margin:.3em 0}small{display:block;margin:.4em 0}</style></head><body>
 <main><header><span class="sticker">Oct 3, 2026</span><h1>Wrong Outfit,<br>Wrong Paddle</h1></header><div id="v" class="card"></div></main>
-<div id="win" class="hide"><div class="card"><div style="font-size:4rem">🎉</div><h1>Hoy! Ikaw ang nanalo!</h1><p class="nick" id="wn"></p><p><b>Open Play Voucher</b> ang premyo mo! Ipakita ang screen na ito sa organizers.</p><button id="wx" class="dim">Ok</button></div></div>
 <div id="md" class="hide"><div class="card"><h2>Sure ka na ba?</h2><ul id="sm"></ul><p><b>Isang beses lang puwedeng bumoto. Hindi na ito mababago.</b></p><button class="dim" id="no">Balik, may babaguhin</button> <button class="alt" id="yes">Oo, i-submit na!</button></div></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script src="common.js"></script><script src="sounds.js"></script>
+<script src="common.js"></script>
 <script>
-const A=WORDS.a,C=WORDS.c,NN=WORDS.n;
-addEventListener('pointerdown',()=>SFX.enable(),{once:true});
-let S={},P={},N={},V={},uid,nick=localStorage.getItem('nick'),sc='',shown=0;
+const A=['Little','Mighty','Sneaky','Fearless','Fierce'],C=['Blue','Pink','Red','Green','Purple','Orange','Black'],NN=['Banger','Dinker','Lobber','Smasher','Dropper','Winner'];
+let S={},P={},N={},V={},uid,nick=localStorage.getItem('nick'),sc='';
 const pct=()=>{const n=Object.keys(N).length,v=Object.keys(V).length;return{n,v,p:n?Math.round(v/n*100):0}};
 ready.then(async u=>{uid=u.uid;[S,P,N,V]=(await Promise.all(['state','participants','nicknames','votes'].map(once))).map(x=>x||{});
-listen('state',x=>{S=x||{};route()});listen('nicknames',x=>{N=x||{};route()});listen('votes',x=>{V=x||{};route()});listen('raffle/winners',x=>{const w=Object.values(x||{}).find(w=>w.uid===uid);if(w&&$('#win').classList.contains('hide')&&!shown){shown=1;$('#wn').textContent=w.nick;$('#win').classList.remove('hide');SFX.play('winner-phone');navigator.vibrate&&navigator.vibrate([300,100,300,100,600])}});$('#wx').onclick=()=>$('#win').classList.add('hide');setInterval(tick,250)});
+listen('state',x=>{S=x||{};route()});listen('nicknames',x=>{N=x||{};route()});listen('votes',x=>{V=x||{};route()});setInterval(tick,250)});
 function route(){const ph=S.phase||'idle',reg=nick&&N[nick]===uid;
 const n=V[uid]?'done':reg?(ph==='voting'?'form':ph==='registration'||ph==='idle'?'wait':'missed'):ph==='registration'?'join':ph==='idle'?'idle':'closed';
 if(n!==sc){sc=n;render()}tick()}
@@ -22,13 +20,13 @@ function render(){const v=$('#v'),x={
 idle:`<h2>Malapit na! 🎉</h2><p>Hindi pa bukas ang registration. Iwan lang na bukas ang page na ito, awtomatiko itong magbabago.</p>`,
 closed:`<h2>Sarado na 🔒</h2><p>Tapos na ang registration kaya hindi ka na makakaboto. Abangan ang results sa TV!</p>`,
 missed:`<h2>Sarado na ang botohan 🔒</h2><p>Hindi ka nakaboto sa oras. Abangan ang results sa TV!</p>`,
-join:`<h2>Sino ka ba talaga? 🕵️</h2><p><b>Anonymous ang boto mo.</b> Ang pangalan mo ay para lang sa raffle at hindi ito ipapakita sa TV o sa ibang tao. Nickname mo lang ang lalabas kung manalo ka. Ilagay ang totoong pangalan mo.</p><label for=nm>Totoong pangalan mo</label><input id=nm maxlength=40 autocomplete=off placeholder="Hal. Juan"><br><br><button id=jn class=alt style="width:100%">Kunin ang nickname ko</button>`,
+join:`<h2>Sino ka ba talaga? 🕵️</h2><p><b>Anonymous ang botohan.</b> Ang pangalan mo ay para lang ma-count ang bilang ng voters at makabuo ng nickname. Hindi ito ipapakita sa kahit sino.</p><label for=nm>Pangalan mo</label><input id=nm maxlength=40 autocomplete=off placeholder="Hal. Juan"><br><br><button id=jn class=alt style="width:100%">Kunin ang nickname ko</button>`,
 wait:`<p>Ikaw si</p><div class=nick>${esc(nick)}</div><p>Naka-register na! Antayin ang botohan, awtomatiko itong magbubukas.</p><div class=t id=t>0:00</div><p style="text-align:center"><b id=rc>0</b> voters na ang naka-register</p>`,
-done:`<h2>Salamat sa pagboto! 🏆</h2><p>Naitala na ang boto mo, <b>${esc(nick)}</b>. Abangan ang results sa TV!</p><p><b>🎟️ May raffle!</b> Huwag isara ang page na ito. Kapag ikaw ang nanalo, lalabas dito ang mensahe.</p><div class=bar><i class=pb></i></div><small class=pt></small>`}[sc];
+done:`<h2>Salamat sa pagboto! 🏆</h2><p>Naitala na ang boto mo, <b>${esc(nick)}</b>. Abangan ang results sa TV!</p><div class=bar><i class=pb></i></div><small class=pt></small>`}[sc];
 v.innerHTML=x||'';if(sc==='join')$('#jn').onclick=join;if(sc==='form')form()}
 async function join(){const name=$('#nm').value.trim();if(!name)return alert('Ilagay muna ang pangalan mo 🙂');
 $('#jn').disabled=true;const all=[];A.forEach(a=>C.forEach(c=>NN.forEach(n=>all.push(a+' '+c+' '+n))));all.sort(()=>Math.random()-.5);
-let got=null;for(const k of all){try{await db.ref('nicknames/'+k).set(uid);got=k;break}catch(e){if(S.phase!=='registration')break}}
+let got=null;for(const k of all.slice(0,40)){try{await db.ref('nicknames/'+k).set(uid);got=k;break}catch(e){if(S.phase!=='registration')break}}
 if(!got){alert('May problema sa registration. Subukan ulit.');return route()}
 try{await db.ref('voterNames/'+uid).set({name,nickname:got,ts:firebase.database.ServerValue.TIMESTAMP})}catch(e){}
 localStorage.setItem('nick',nick=got);N[got]=uid;sc='';route()}

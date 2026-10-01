@@ -1,0 +1,12 @@
+:root{--bg:#ffd23d;--ink:#1b1147;--pink:#ff2e88;--teal:#16c7b0;--vio:#6a3df0;--w:#fff}
+*{box-sizing:border-box}
+body{margin:0;font-family:Rubik,system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+h1,h2,h3,.big{font-family:Bungee,Impact,sans-serif;font-weight:400;margin:.2em 0;line-height:1.05}
+.sticker{display:inline-block;background:var(--pink);color:#fff;padding:.25em .7em;border:3px solid var(--ink);border-radius:.5em;transform:rotate(-3deg);font-family:Bungee,sans-serif;box-shadow:3px 3px 0 var(--ink)}
+.card{background:var(--w);border:3px solid var(--ink);border-radius:1em;padding:1em;box-shadow:5px 5px 0 var(--ink)}
+button{font:inherit;font-weight:700;border:3px solid var(--ink);border-radius:.7em;padding:.65em 1.1em;background:var(--teal);color:var(--ink);cursor:pointer;box-shadow:3px 3px 0 var(--ink)}
+button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+button.alt{background:var(--pink);color:#fff}button.dim{background:#fff}button.on{background:var(--vio);color:#fff}button:disabled{opacity:.4;cursor:not-allowed}
+input,select{font:inherit;width:100%;padding:.7em;border-radius:.6em;border:3px solid var(--ink);background:#fff;color:var(--ink)}
+.bar{height:1em;background:#fff;border:3px solid var(--ink);border-radius:9em;overflow:hidden}.bar i{display:block;height:100%;width:0;background:var(--pink);transition:width .5s}
+.hide{display:none!important}

@@ -1,0 +1,30 @@
+<!doctype html><html lang="tl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CCPC Wrong Outfit, Wrong Paddle - Display</title>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@400;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css">
+<style>html{font-size:1.05vw}body{overflow:hidden;padding:1.5rem 2.5rem;height:100vh}header{display:flex;align-items:center;gap:1.5rem;margin-bottom:1.2rem}header h1{font-size:2.6rem}section h2{font-size:2.4rem}
+.grid{display:grid;gap:.9rem;grid-template-columns:repeat(auto-fill,minmax(14rem,1fr))}.pc{padding:.6rem .8rem;text-align:center;box-shadow:3px 3px 0 var(--ink);overflow:hidden}.pc h3{font-size:1.25rem;overflow-wrap:anywhere}.num{font-family:Bungee;color:var(--pink);font-size:2.4rem;line-height:1}.pc:nth-child(3n){transform:rotate(-1.2deg)}.pc:nth-child(3n+1){transform:rotate(.8deg)}
+.mid{display:flex;gap:3rem;align-items:center;justify-content:center;margin-top:1rem}.timer{font-size:12rem;line-height:1}.qr{width:17rem;height:17rem;background:#fff;border:.4rem solid var(--ink);border-radius:1rem;display:flex;align-items:center;justify-content:center;text-align:center;font-family:Bungee;padding:.8rem}.qr img,.qr canvas,.qr img{max-width:100%;max-height:100%}
+.ct{text-align:center;font-size:1.6rem;font-weight:700}.aw{min-height:15rem}.aw h3{font-size:1.4rem}.aw ol{list-style:none;padding:0;margin:.5rem 0}.aw li{display:flex;gap:.6rem;align-items:center;font-size:1.05rem;padding:.25rem 0;border-bottom:2px dashed #ccc}.aw li b{font-family:Bungee;color:var(--pink);width:1.6rem}.aw li span{flex:1}.aw li em{font-style:normal;font-weight:700}.aw .q{font-family:Bungee;font-size:5rem;text-align:center;color:#ddd}.aw.on{background:#fff6c9;animation:pop .5s}@keyframes pop{from{transform:scale(.9) rotate(-2deg)}}
+@media(prefers-reduced-motion:reduce){.aw.on{animation:none}}</style></head><body>
+<header><span class="sticker" style="font-size:1.4rem">Oct 3, 2026</span><h1>CCPC Wrong Outfit, Wrong Paddle Open Play</h1></header>
+<section id="t1"><h2>Mga Kalahok 🎉</h2><div id="cards" class="grid" style="grid-template-columns:repeat(8,1fr)"></div></section>
+<section id="t2" class="hide"><h2>Mag-register na para makaboto! 📲</h2><div class="mid"><div><div class="ct">1. Kumonek sa WiFi</div><div class="qr" id="q1"></div></div>
+<div style="text-align:center"><div class="big timer" id="rt">5:00</div><div class="ct"><span id="rc" style="font-size:3rem;color:var(--pink);font-family:Bungee">0</span> voters na ang naka-register</div></div>
+<div><div class="ct">2. I-scan para bumoto</div><div class="qr" id="q2"></div></div></div></section>
+<section id="t3" class="hide"><h2>BOTOHAN NA! 🗳️</h2><div style="text-align:center;margin-top:1rem"><div class="big timer" id="vt">5:00</div><div class="ct" id="vc" style="margin:1rem 0"></div><div class="bar" style="max-width:60rem;margin:auto;height:2rem"><i id="pb"></i></div></div></section>
+<section id="t4" class="hide"><h2>Results 🏆</h2><div id="aw" class="grid" style="grid-template-columns:repeat(4,1fr)"></div></section>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script><script src="common.js"></script>
+<script>
+let S={},P={},N={},V={},lq=null;
+ready.then(()=>{[['state',x=>S=x||{}],['participants',x=>P=x||{}],['nicknames',x=>N=x||{}],['votes',x=>V=x||{}]].forEach(([p,f])=>listen(p,x=>{f(x);draw()}));setInterval(tick,250)});
+function draw(){const tab=S.tab||1;[1,2,3,4].forEach(i=>$('#t'+i).classList.toggle('hide',i!==tab));
+$('#cards').innerHTML=Object.values(P).sort((a,b)=>a.num-b.num).map(p=>`<div class="card pc"><div class="num">#${p.num}</div><h3>${esc(p.name)}</h3></div>`).join('');
+const n=Object.keys(N).length,v=Object.keys(V).length,pc=n?Math.round(v/n*100):0;$('#rc').textContent=n;$('#vc').textContent=`${v} sa ${n} registered voters ang nakaboto na (${pc}%)`;$('#pb').style.width=pc+'%';
+const st=S.settings||{};if(st.voteUrl!==lq){lq=st.voteUrl;$('#q2').innerHTML='';if(lq)new QRCode($('#q2'),{text:lq,width:240,height:240})}
+$('#q1').innerHTML=st.wifiImg?`<img src="${st.wifiImg}">`:'WiFi QR<br>dito';
+$('#aw').innerHTML=CATS.map(c=>{const on=(S.reveal||{})[c.k],r=top5(V,c.k),pn=x=>P[x]?`#${x} ${esc(P[x].name)}`:'#'+x;
+return `<div class="card aw ${on?'on':''}"><div style="font-size:2rem">${c.e}</div><h3>${c.t}</h3>${on?(r.length?`<ol>${r.map(x=>`<li><b>${x.r}</b><span>${pn(x.n)}</span><em>${x.t} ${x.t>1?'votes':'vote'}</em></li>`).join('')}</ol>`:'<p>Walang boto</p>'):'<div class="q">?</div>'}</div>`}).join('');tick()}
+function tick(){const ph=S.phase||'idle',t=now();
+$('#rt').textContent=ph==='registration'?fmt(S.regEnd-t):ph==='idle'?fmt((S.regMin||5)*60000):'CLOSED';
+$('#vt').textContent=ph==='voting'?fmt(S.voteEnd-t):(ph==='closed')?'CLOSED':fmt((S.voteMin||5)*60000)}
+</script></body></html>
