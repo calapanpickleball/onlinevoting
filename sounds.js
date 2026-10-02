@@ -17,7 +17,7 @@ const SFX_FILES={
 'wheel-stop':'',       // huminto ang wheel 1 o 2
 'raffle-winner':'',    // huminto ang ikatlong wheel, lumabas ang nickname ng nanalo
 'raffle-redraw':'',    // na-redraw ang nanalo
-'bg-lobby':'',         // background music sa Tab 1 at 2 (naka-loop, walang synthesized)
+'bg-lobby':'sounds/bg_ganda.mp3',         // background music sa Tab 1 at 2 (naka-loop, walang synthesized)
 'winner-phone':''      // sa phone ng nanalo
 };
 const SFX=(()=>{let ac,on=false,vol=.8,mute=false;const A={},I={},W=new Set();

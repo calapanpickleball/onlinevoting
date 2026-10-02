@@ -1,0 +1,78 @@
+<!doctype html><html lang="tl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin - CCPC Wrong Outfit</title>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@400;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css">
+<style>main{max-width:1100px;margin:auto;padding:1em}.g{display:grid;gap:1em;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}.card{margin-bottom:1em}.row{display:flex;gap:.5em;flex-wrap:wrap;align-items:center;margin:.5em 0}.row input[type=number]{width:5em}
+table{width:100%;border-collapse:collapse}td,th{padding:.4em;border-bottom:2px solid #ddd;text-align:left;font-size:.9rem}.st{font-family:Bungee;font-size:1.4rem;color:var(--pink)}label.ck{display:flex;gap:.4em;align-items:center;font-weight:700}label.ck input{width:auto}</style></head><body>
+<main id="gate"><div class="card" style="max-width:360px;margin:20vh auto"><h2>Admin 🔐</h2><input id="pin" type="password" inputmode="numeric" placeholder="PIN"><br><br><button id="go" style="width:100%">Pasok</button></div></main>
+<main id="app" class="hide"><h1>CCPC Wrong Outfit, Wrong Paddle - Admin</h1>
+<div class="g"><div class="card"><h2>Event control</h2><p>Phase: <span class="st" id="ph">-</span></p><p>Registered: <b id="nr">0</b> | Nakaboto: <b id="nv">0</b> (<b id="np">0</b>%)</p>
+<div class="row"><b>1.</b><input type="number" id="rm" value="5" min="1"> min <button id="sr">Start registration</button></div>
+<div class="row"><b>2.</b><input type="number" id="vm" value="5" min="1"> min <button id="sv" class="alt">Sarado na ang registration, ACTIVATE VOTING</button></div>
+<div class="row"><b>3.</b><button id="cv" class="dim">Close voting at ipakita ang results</button></div>
+<p><b>TV display:</b></p><div class="row" id="tabs"></div><div class="row"><b>🔊 TV sound:</b><input type="range" id="vol" min="0" max="100" value="80" style="width:10rem"><button class="dim" id="mu">Mute</button></div><div class="row"><button class="dim" id="rs">Reset event (burahin ang voters at votes)</button></div></div>
+<div class="card"><h2>Results reveal (TV Tab 4)</h2><div class="row" id="rv"></div><hr><h2>Settings</h2><label>Voting page URL (para sa QR)</label><input id="vu"><br><br><label>WiFi SSID</label><input id="sid"><br><br><label>WiFi password</label><input id="wpw"><br><br><label>WiFi QR image (optional; kung wala, awtomatiko ang QR mula sa SSID at password)</label><input type="file" id="wf" accept="image/*"><div class="row"><button id="ss">I-save ang settings</button><button id="wx" class="dim">Gamitin ang auto WiFi QR</button></div></div></div>
+<div class="card"><h2>🎟️ Raffle - Open Play Voucher (3 winners)</h2><p>Eligible (nakaboto): <b id="el">0</b> | Winners: <b id="wt">-</b></p><div class="row"><button id="sp2" class="alt">SPIN</button><button id="rd" class="dim">Redraw</button></div><p id="ri"></p></div>
+<div class="card"><h2>Mga kalahok</h2><p id="rinfo"></p><div class="row"><button id="sync">I-sync sa participants</button></div>
+<table><thead><tr><th>#<th>Name<th>Outfit<th>Paddle<th></thead><tbody id="pl"></tbody></table></div>
+<div class="card"><h2>Voters (pribado, review lang)</h2><table><thead><tr><th>Nickname<th>Pangalan</thead><tbody id="vl"></tbody></table></div></main>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="common.js"></script>
+<script>
+const PIN='100326';let S={},P={},N={},V={},W={},R={},RG={},D=[],wifi=null;
+const up=o=>db.ref('state').update(o).catch(e=>alert('Hindi na-save: '+e.message));
+$('#pin').onkeydown=e=>{if(e.key==='Enter')$('#go').click()};
+$('#go').onclick=async()=>{if($('#pin').value!==PIN)return alert('Mali ang PIN');const u=await ready;try{await db.ref('admins/'+u.uid).set(PIN)}catch(e){}
+$('#gate').classList.add('hide');$('#app').classList.remove('hide');
+[['state',x=>S=x||{}],['participants',x=>P=x||{}],['nicknames',x=>N=x||{}],['votes',x=>V=x||{}],['voterNames',x=>W=x||{}],['raffle',x=>R=x||{}],['registrants',x=>RG=x||{}]].forEach(([p,f])=>listen(p,x=>{f(x);draw()}));};
+$('#tabs').innerHTML=['Participants','Voters','Voting','Results','Raffle'].map((t,i)=>`<button class="dim" data-t="${i+1}">${i+1}. ${t}</button>`).join('');
+$$('#tabs button').forEach(b=>b.onclick=()=>up({tab:+b.dataset.t}));
+$('#rv').innerHTML=CATS.map(c=>`<button class="dim" data-k="${c.k}">${c.e} ${c.t}</button>`).join('');
+$$('#rv button').forEach(b=>b.onclick=()=>db.ref('state/reveal/'+b.dataset.k).set(((S.reveal||{})[b.dataset.k])?null:true));
+$('#sr').onclick=()=>{const m=+$('#rm').value||5;up({phase:'registration',regMin:m,regEnd:now()+m*60000,tab:2})};
+$('#sv').onclick=()=>{const m=+$('#vm').value||5;if(confirm('Isara ang registration at buksan ang botohan?'))up({phase:'voting',voteMin:m,voteEnd:now()+m*60000,tab:3})};
+$('#cv').onclick=()=>{if(confirm('Isara na ang botohan at ipakita ang results tab?'))up({phase:'closed',tab:4})};
+$('#rs').onclick=()=>{if(confirm('Buburahin ang lahat ng voters at votes. Sigurado ka?'))db.ref().update({nicknames:null,voterNames:null,votes:null,raffle:null,'state/phase':'idle','state/tab':1,'state/reveal':null,'state/regEnd':null,'state/voteEnd':null}).catch(e=>alert(e.message))};
+$('#wf').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>wifi=r.result;r.readAsDataURL(f)};
+$('#ss').onclick=()=>{const s={voteUrl:$('#vu').value.trim(),ssid:$('#sid').value.trim(),pass:$('#wpw').value.trim(),wifiImg:wifi||(S.settings||{}).wifiImg||''};db.ref('state/settings').set(s).then(()=>alert('Na-save!')).catch(e=>alert(e.message))};
+const SPIN=6000,LBL=['Adjective','Color','Noun'],KEY=['a','c','n'];
+const wins=()=>R.winners||{},nextN=()=>[1,2,3].find(i=>!wins()[i]),cur=()=>R.current||null;
+const nickOf=u=>Object.keys(N).find(k=>N[k]===u);
+const okNick=k=>{const p=(k||'').split(' ');return p.length===3&&WORDS.a.includes(p[0])&&WORDS.c.includes(p[1])&&WORDS.n.includes(p[2])};
+const taken=()=>Object.values(wins()).map(w=>w.uid);
+const pool=()=>{const tk=taken(),ex=R.excluded||{};return Object.keys(V).filter(u=>!tk.includes(u)&&!ex[u]&&okNick(nickOf(u)))};
+let fin=null;
+function finalize(c){if(!c||c.step!==3||fin===c.id)return;const x=cur();if(!x||x.id!==c.id||x.done)return;fin=c.id;
+db.ref('raffle').update({['winners/'+c.n]:{uid:c.uid,nick:c.words.a+' '+c.words.c+' '+c.words.n},'current/done':true}).catch(e=>{fin=null;alert(e.message)})}
+$('#sp2').onclick=()=>{const c=cur(),t=now();
+if(c&&!c.done){if(t-c.t<SPIN||c.step>=3)return;const k=c.step+1,w=nickOf(c.uid).split(' ')[k-1];
+db.ref('raffle/current').update({step:k,t,['words/'+KEY[k-1]]:w}).then(()=>{if(k===3)setTimeout(()=>finalize(cur()),SPIN+300)}).catch(e=>alert(e.message));return}
+const n=nextN();if(!n)return alert('Kumpleto na ang 3 nanalo');
+let p=pool();if(!p.length){const tk=taken(),alt=Object.keys(V).filter(u=>!tk.includes(u)&&okNick(nickOf(u)));
+if(alt.length&&confirm('Wala nang eligible maliban sa mga na-redraw. Isama sila ulit?'))p=alt;else return alert('Walang eligible na nakaboto')}
+const uid=p[Math.floor(Math.random()*p.length)],w=nickOf(uid).split(' ')[0];
+db.ref('raffle/current').set({id:t,n,uid,step:1,t,words:{a:w},done:false}).then(()=>up({tab:5})).catch(e=>alert(e.message))};
+$('#rd').onclick=()=>{const c=cur();if(!c)return;
+if(c.done){if(confirm('Hindi na kasali ang nanalo na ito at mag-SPIN ulit para sa #'+c.n+'?'))db.ref('raffle').update({['excluded/'+c.uid]:true,['winners/'+c.n]:null,current:null})}
+else if(confirm('Kanselahin ang kasalukuyang spin?'))db.ref('raffle/current').remove()};
+function rstat(){const c=cur(),t=now(),n=nextN();$('#el').textContent=pool().length;
+$('#wt').textContent=[1,2,3].map(i=>{const w=wins()[i];return w?i+'. '+w.nick+' ('+((W[w.uid]||{}).name||'?')+')':null}).filter(Boolean).join(' | ')||'-';
+if(c&&c.step===3&&!c.done&&t-c.t>SPIN+300)finalize(c);
+const sp=c&&!c.done&&t-c.t<SPIN;let lab,dis=false;
+if(c&&!c.done){if(c.step>=3){lab='Inaanunsyo na ang nanalo...';dis=true}else{lab='SPIN wheel '+(c.step+1)+' ('+LBL[c.step]+')';dis=!!sp}}else if(n)lab='SPIN #'+n+' (Adjective)';else{lab='Kumpleto na';dis=true}
+const b=$('#sp2');b.textContent=lab;b.disabled=dis;
+$('#ri').textContent=!c?'':c.done?'Tapos na ang #'+c.n+': '+c.words.a+' '+c.words.c+' '+c.words.n+' (pangalan, pribado: '+((W[c.uid]||{}).name||'?')+')':sp?'Umiikot ang wheel '+c.step+'...':c.step<3?'Huminto na. I-click ang susunod na SPIN.':'Inaanunsyo na ang nanalo...'}
+setInterval(rstat,500);
+$('#wx').onclick=()=>db.ref('state/settings/wifiImg').set('').then(()=>alert('Auto WiFi QR na ang gagamitin.')).catch(e=>alert(e.message));
+const wo=r=>r.wrongOutfit!=null?r.wrongOutfit===true:/both/i.test(r.program||''),wp=r=>r.wrongPaddle!=null?r.wrongPaddle===true:/both/i.test(r.program||''),ci=r=>r.checkedIn===true||r.paid===true;
+function derive(){
+const byRid={},used=new Set();Object.values(P).forEach(p=>{if(p&&p.rid)byRid[p.rid]=+p.num});
+const l=Object.entries(RG).map(([id,r])=>({id,...r})).filter(r=>r&&r.name&&ci(r)&&(wo(r)||wp(r))).sort((a,b)=>(a.checkedInAt||a.paidAt||0)-(b.checkedInAt||b.paidAt||0));
+l.forEach(r=>{if(byRid[r.id])used.add(byRid[r.id])});let n=1;const nx=()=>{while(used.has(n))n++;used.add(n);return n};
+return l.map(r=>({num:byRid[r.id]||nx(),rid:r.id,name:r.name.trim(),wo:wo(r),wp:wp(r),outfit:wo(r)?(r.wrongOutfitFinal||''):'',paddle:wp(r)?(r.paddle||''):''})).sort((a,b)=>a.num-b.num)}
+const same=(a,b)=>!!b&&a.rid===b.rid&&a.name===b.name&&a.outfit===b.outfit&&a.paddle===b.paddle&&!!a.wo===!!b.wo&&!!a.wp===!!b.wp;
+function renderP(){D=derive();
+const pend=D.filter(d=>!same(d,P[d.num])).length+Object.values(P).filter(p=>p&&!D.some(d=>d.num===+p.num)).length;
+$('#rinfo').textContent='Galing sa registration: '+D.length+' na naka-check in sa Wrong Outfit/Wrong Paddle. '+(pend?pend+' ang hindi pa na-sync.':'Naka-sync na.');
+$('#sync').disabled=!pend;
+renderP();
+$('#vl').innerHTML=Object.values(W).map(w=>`<tr><td>${esc(w.nickname)}<td>${esc(w.name)}`).join('')}
+</script></body></html>
